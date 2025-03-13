@@ -34,6 +34,17 @@ public class UserController {
         }
     }
 
+	 // ✅ Get User by Email
+	    @GetMapping("/find")
+	    public ResponseEntity<?> getUserByEmail(@RequestParam String email) {
+	        try {
+	            return ResponseEntity.ok(userService.getUserByEmail(email));
+	        } catch (RuntimeException e) {
+	            return ResponseEntity.badRequest().body(e.getMessage());
+	        }
+	    }
+   
+    
     // ✅ Update Profile
     @PutMapping("/update/{id}")
     public ResponseEntity<?> updateProfile(@PathVariable Long id, @RequestParam String description) {

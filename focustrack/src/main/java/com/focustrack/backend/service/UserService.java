@@ -34,6 +34,12 @@ public class UserService {
         throw new RuntimeException("Invalid credentials!");
     }
 
+    public User getUserByEmail(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+    }
+    
+    
     public User updateUser(Long id, String description) {
         return userRepository.findById(id)
             .map(user -> {
