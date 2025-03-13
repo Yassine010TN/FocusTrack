@@ -9,7 +9,7 @@ import java.util.Set;
 @Entity
 @Getter
 @Setter
-@NoArgsConstructor // 🔹 Required for JSON deserialization
+@NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "users")
 public class User {
@@ -25,11 +25,7 @@ public class User {
 
     private String description; // Optional field
 
-    @ManyToMany
-    @JoinTable(
-        name = "user_contacts",
-        joinColumns = @JoinColumn(name = "user_id"),
-        inverseJoinColumns = @JoinColumn(name = "contact_id")
-    )
-    private Set<User> contacts = new HashSet<>();
+    @OneToMany(mappedBy = "sender", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<Contact> contacts = new HashSet<>();
 }
+
