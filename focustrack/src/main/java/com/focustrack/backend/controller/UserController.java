@@ -2,6 +2,7 @@ package com.focustrack.backend.controller;
 
 import com.focustrack.backend.dto.UserDTO;
 import com.focustrack.backend.dto.ContactDTO;
+import com.focustrack.backend.dto.UpdateUserDTO;
 import com.focustrack.backend.model.Contact;
 import com.focustrack.backend.model.User;
 import com.focustrack.backend.service.UserService;
@@ -22,9 +23,13 @@ public class UserController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<UserDTO> registerUser(@RequestBody User user) {
-        UserDTO newUser = userService.registerUser(user);
-        return ResponseEntity.ok(newUser);
+    public ResponseEntity<?> registerUser(@RequestBody User user) {
+        try {
+			return ResponseEntity.ok(userService.registerUser(user));
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			return ResponseEntity.badRequest().body(e.getMessage());
+		}
     }
 
     //  Login
@@ -37,7 +42,7 @@ public class UserController {
         }
     }
 
-    //  Get User by Email (Now returns only ID & Email)
+    //  Get User by Email 
     @GetMapping("/search")
     public ResponseEntity<?> getUserByEmail(@RequestParam String email) {
         try {
@@ -47,6 +52,7 @@ public class UserController {
         }
     }   
 
+    //  Get User by Id 
     @GetMapping("/{id}")
     public ResponseEntity<?> getUserById(@PathVariable Long id) {
         try {
@@ -56,11 +62,10 @@ public class UserController {
         }
     }       
     
-    //  Update Profile
-    @PutMapping("/update/{id}")
-    public ResponseEntity<?> updateProfile(@PathVariable Long id, @RequestParam String description) {
+    @PatchMapping("/update/{id}")
+    public ResponseEntity<?> updateProfile(@PathVariable Long id, @RequestBody UpdateUserDTO updateData) {
         try {
-            return ResponseEntity.ok(userService.updateUser(id, description));
+            return ResponseEntity.ok(userService.updateUser(id, updateData));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
@@ -128,6 +133,18 @@ public class UserController {
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage()); 
         }
-    }   
+    }
+    
+ // ✅ Delete Contact (Remove from Friends List)
+    @DeleteMapping("/contacts/remove")
+    public ResponseEntity<?> deleteContact(@RequestParam Long userId, @RequestParam Long contactId) {
+        try {
+            userService.deleteContact(userId, contactId);
+            return ResponseEntity.ok("Contact removed successfully.");
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage()); // Return 400 Bad Request if contact not found
+        }
+    }
+
 }
 
