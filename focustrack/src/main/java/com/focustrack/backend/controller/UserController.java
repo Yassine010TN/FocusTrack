@@ -2,10 +2,17 @@ package com.focustrack.backend.controller;
 
 import com.focustrack.backend.dto.UserDTO;
 import com.focustrack.backend.dto.ContactDTO;
+import com.focustrack.backend.dto.RegisterUserDTO;
 import com.focustrack.backend.dto.UpdateUserDTO;
 import com.focustrack.backend.model.Contact;
 import com.focustrack.backend.model.User;
 import com.focustrack.backend.service.UserService;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.validation.Valid;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,18 +28,27 @@ public class UserController {
     public UserController(UserService userService) {
         this.userService = userService;
     }
-
+    
+    @Operation(summary = "Register a new user", description = "Creates a new user account with email and password validation.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "User registered successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid email or password format")
+    })
     @PostMapping("/register")
-    public ResponseEntity<?> registerUser(@RequestBody User user) {
+    public ResponseEntity<?> registerUser(@Valid @RequestBody RegisterUserDTO userDTO) {
         try {
-			return ResponseEntity.ok(userService.registerUser(user));
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			return ResponseEntity.badRequest().body(e.getMessage());
-		}
+            return ResponseEntity.ok(userService.registerUser(userDTO));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
-    //  Login
+    @Operation(summary = "User Login", description = "Authenticates a user with email and password.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Login successful"),
+        @ApiResponse(responseCode = "400", description = "Invalid email or password")
+    })
+
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestParam String email, @RequestParam String password) {
         try {
@@ -42,7 +58,12 @@ public class UserController {
         }
     }
 
-    //  Get User by Email 
+    @Operation(summary = "Find User by Email", description = "Retrieves user details based on the provided email.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "User found"),
+        @ApiResponse(responseCode = "400", description = "User not found")
+    })
+
     @GetMapping("/search")
     public ResponseEntity<?> getUserByEmail(@RequestParam String email) {
         try {
@@ -52,7 +73,12 @@ public class UserController {
         }
     }   
 
-    //  Get User by Id 
+    @Operation(summary = "Find User by ID", description = "Retrieves user details based on the provided user ID.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "User found"),
+        @ApiResponse(responseCode = "400", description = "User not found")
+    })
+
     @GetMapping("/{id}")
     public ResponseEntity<?> getUserById(@PathVariable Long id) {
         try {
@@ -61,7 +87,13 @@ public class UserController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }       
-    
+ 
+    @Operation(summary = "Update User Profile", description = "Allows users to update their email, password, or description.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "User updated successfully"),
+        @ApiResponse(responseCode = "400", description = "Invalid email or password format")
+    })
+
     @PatchMapping("/update/{id}")
     public ResponseEntity<?> updateProfile(@PathVariable Long id, @RequestBody UpdateUserDTO updateData) {
         try {
@@ -71,7 +103,12 @@ public class UserController {
         }
     }
 
-    //  Delete Profile
+    @Operation(summary = "Delete User", description = "Deletes the user account and removes associated data.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "User deleted successfully"),
+        @ApiResponse(responseCode = "400", description = "User not found")
+    })
+
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteUser(@PathVariable Long id) {
         try {
@@ -82,7 +119,12 @@ public class UserController {
         }
     }
     
-    //  Send Friend Request
+    @Operation(summary = "Send Friend Request", description = "Allows a user to send a friend request to another user.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Friend request sent successfully"),
+        @ApiResponse(responseCode = "400", description = "User not found or request already sent")
+    })
+
     @PostMapping("/invite")
     public ResponseEntity<?> sendFriendRequest(@RequestParam Long userId, @RequestParam Long contactId) {
         try {
@@ -93,7 +135,12 @@ public class UserController {
         }
     }
 
-    //  Accept/Reject Friend Request
+    @Operation(summary = "Respond to Friend Request", description = "Accept or decline a pending friend request.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Friend request accepted/declined"),
+        @ApiResponse(responseCode = "400", description = "Friend request not found")
+    })
+
     @PostMapping("/respond-invite")
     public ResponseEntity<?> respondToFriendRequest(@RequestParam Long userId, @RequestParam Long contactId, @RequestParam boolean accept) {
         try {
@@ -104,7 +151,12 @@ public class UserController {
         }
     }
 
- //  Get Sent Invitations (requests this user sent)
+    @Operation(summary = "Get Sent Friend Requests", description = "Retrieves the list of friend requests sent by the user.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "List of sent friend requests"),
+        @ApiResponse(responseCode = "400", description = "User not found")
+    })
+
     @GetMapping("/invitations/sent")
     public ResponseEntity<?> getSentInvitations(@RequestParam Long userId) {
         try {
@@ -115,7 +167,12 @@ public class UserController {
     }
 
 
- //  Get Received Invitations (requests this user received)
+    @Operation(summary = "Get Received contact Requests", description = "Retrieves the list of contact requests received by the user.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "List of received friend requests"),
+        @ApiResponse(responseCode = "400", description = "User not found")
+    })
+
     @GetMapping("/invitations/received")
     public ResponseEntity<?> getReceivedInvitations(@RequestParam Long userId) {
         try {
@@ -125,7 +182,12 @@ public class UserController {
         }
     }
 
-    //  Get Contacts List (Accepted Friends)
+    @Operation(summary = "Get User's contatcs List", description = "Retrieves a list of accepted contacts.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "List of contacts retrieved"),
+        @ApiResponse(responseCode = "400", description = "User not found")
+    })
+
     @GetMapping("/contacts")
     public ResponseEntity<?> getContacts(@RequestParam Long userId) {
         try {
@@ -135,7 +197,12 @@ public class UserController {
         }
     }
     
- // ✅ Delete Contact (Remove from Friends List)
+    @Operation(summary = "Remove Contact", description = "Removes an accepted contact from the user's contacts list.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Contact removed successfully"),
+        @ApiResponse(responseCode = "400", description = "Contact not found")
+    })
+   
     @DeleteMapping("/contacts/remove")
     public ResponseEntity<?> deleteContact(@RequestParam Long userId, @RequestParam Long contactId) {
         try {

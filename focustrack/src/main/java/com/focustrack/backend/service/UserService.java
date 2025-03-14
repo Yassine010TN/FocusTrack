@@ -2,10 +2,14 @@ package com.focustrack.backend.service;
 
 import com.focustrack.backend.dto.UserDTO;
 import com.focustrack.backend.dto.ContactDTO;
+import com.focustrack.backend.dto.RegisterUserDTO;
 import com.focustrack.backend.dto.UpdateUserDTO;
 import com.focustrack.backend.model.User;
 import com.focustrack.backend.model.Contact;
 import com.focustrack.backend.repository.UserRepository;
+
+import jakarta.validation.Valid;
+
 import com.focustrack.backend.repository.ContactRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -27,15 +31,18 @@ public class UserService {
         this.passwordEncoder = new BCryptPasswordEncoder();
     }
 
-    public UserDTO registerUser(User user) {
-        if (userRepository.findByEmail(user.getEmail()).isPresent()) {
+    public UserDTO registerUser(@Valid RegisterUserDTO userDTO) { //  Validates fields
+        if (userRepository.findByEmail(userDTO.getEmail()).isPresent()) {
             throw new RuntimeException("Email already registered!");
         }
-        user.setPassword(passwordEncoder.encode(user.getPassword())); // Encrypt password
+        User user = new User();
+        user.setEmail(userDTO.getEmail());
+        user.setPassword(passwordEncoder.encode(userDTO.getPassword())); // Encrypt password
+        user.setDescription(userDTO.getDescription());
+
         User savedUser = userRepository.save(user);
         return new UserDTO(savedUser);
     }
-
     public User loginUser(String email, String password) {
         Optional<User> user = userRepository.findByEmail(email);
         if (user.isPresent() && passwordEncoder.matches(password, user.get().getPassword())) {
