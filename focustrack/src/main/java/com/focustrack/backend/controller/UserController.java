@@ -17,8 +17,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collections;
 import java.util.List;
-
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 @RestController
 @RequestMapping("/users")
 public class UserController {
@@ -52,11 +53,13 @@ public class UserController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestParam String email, @RequestParam String password) {
         try {
-            return ResponseEntity.ok(userService.loginUser(email, password));
+            String token = userService.loginUser(email, password);
+            return ResponseEntity.ok(Collections.singletonMap("token", token));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
 
     @Operation(summary = "Find User by Email", description = "Retrieves user details based on the provided email.")
     @ApiResponses({
@@ -78,7 +81,7 @@ public class UserController {
         @ApiResponse(responseCode = "200", description = "User found"),
         @ApiResponse(responseCode = "400", description = "User not found")
     })
-
+    @SecurityRequirement(name = "BearerAuth")
     @GetMapping("/{id}")
     public ResponseEntity<?> getUserById(@PathVariable Long id) {
         try {
@@ -93,7 +96,7 @@ public class UserController {
         @ApiResponse(responseCode = "200", description = "User updated successfully"),
         @ApiResponse(responseCode = "400", description = "Invalid email or password format")
     })
-
+    @SecurityRequirement(name = "BearerAuth")
     @PatchMapping("/update/{id}")
     public ResponseEntity<?> updateProfile(@PathVariable Long id, @RequestBody UpdateUserDTO updateData) {
         try {
@@ -187,7 +190,7 @@ public class UserController {
         @ApiResponse(responseCode = "200", description = "List of contacts retrieved"),
         @ApiResponse(responseCode = "400", description = "User not found")
     })
-
+    @SecurityRequirement(name = "BearerAuth")
     @GetMapping("/contacts")
     public ResponseEntity<?> getContacts(@RequestParam Long userId) {
         try {

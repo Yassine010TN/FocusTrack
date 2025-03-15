@@ -15,22 +15,32 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import java.util.Optional;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.springframework.security.oauth2.jwt.JwtClaimsSet;
+import org.springframework.security.oauth2.jwt.JwtEncoder;
+import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
+import com.focustrack.backend.security.JwtUtil;
 
 @Service
 public class UserService {
     private final UserRepository userRepository;
     private final ContactRepository contactRepository;
     private final BCryptPasswordEncoder passwordEncoder;
+    private final JwtUtil jwtUtil;
 
     @Autowired
-    public UserService(UserRepository userRepository, ContactRepository contactRepository, BCryptPasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository, ContactRepository contactRepository, BCryptPasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
         this.userRepository = userRepository;
         this.contactRepository = contactRepository;
         this.passwordEncoder = passwordEncoder;
+        this.jwtUtil = jwtUtil;
     }
-
+    @Autowired
+    private JwtEncoder jwtEncoder;
+    
     public UserDTO registerUser(@Valid RegisterUserDTO userDTO) { //  Validates fields
         if (userRepository.findByEmail(userDTO.getEmail()).isPresent()) {
             throw new RuntimeException("Email already registered!");
@@ -43,14 +53,14 @@ public class UserService {
         User savedUser = userRepository.save(user);
         return new UserDTO(savedUser);
     }
-    public User loginUser(String email, String password) {
+    
+    public String loginUser(String email, String password) {
         Optional<User> user = userRepository.findByEmail(email);
         if (user.isPresent() && passwordEncoder.matches(password, user.get().getPassword())) {
-            return user.get();
+            return jwtUtil.generateToken(email); // ✅ Return JWT Token
         }
         throw new RuntimeException("Invalid credentials!");
     }
-
 
     //  Get User by Email 
     public UserDTO getUserByEmail(String email) {

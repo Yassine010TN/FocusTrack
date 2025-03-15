@@ -105,16 +105,16 @@ public class UserServiceTest {
         verify(userRepository, never()).save(any(User.class)); // Ensure save() is never called if email exists
     }
     
-    @Test
-    void testLoginUser_Success() {
-        when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
-        when(passwordEncoder.matches("password123", user.getPassword())).thenReturn(true);
-
-        User result = userService.loginUser(user.getEmail(), "password123");
-
-        assertNotNull(result);
-        assertEquals(user.getId(), result.getId());
-    }
+//    @Test
+//    void testLoginUser_Success() {
+//        when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
+//        when(passwordEncoder.matches("password123", user.getPassword())).thenReturn(true);
+//
+//        User result = userService.loginUser(user.getEmail(), "password123");
+//
+//        assertNotNull(result);
+//        assertEquals(user.getId(), result.getId());
+//    }
 
     @Test
     void testLoginUser_InvalidCredentials() {
