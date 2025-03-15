@@ -25,10 +25,10 @@ public class UserService {
     private final BCryptPasswordEncoder passwordEncoder;
 
     @Autowired
-    public UserService(UserRepository userRepository, ContactRepository contactRepository) {
+    public UserService(UserRepository userRepository, ContactRepository contactRepository, BCryptPasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.contactRepository = contactRepository;
-        this.passwordEncoder = new BCryptPasswordEncoder();
+        this.passwordEncoder = passwordEncoder;
     }
 
     public UserDTO registerUser(@Valid RegisterUserDTO userDTO) { //  Validates fields
