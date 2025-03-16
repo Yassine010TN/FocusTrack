@@ -1,7 +1,6 @@
 package com.focustrack.backend.service;
 
 import com.focustrack.backend.dto.UserDTO;
-import com.focustrack.backend.dto.ContactDTO;
 import com.focustrack.backend.dto.RegisterUserDTO;
 import com.focustrack.backend.dto.UpdateUserDTO;
 import com.focustrack.backend.model.User;
@@ -15,16 +14,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import java.util.Optional;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.springframework.security.oauth2.jwt.JwtClaimsSet;
-import org.springframework.security.oauth2.jwt.JwtEncoder;
-import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import com.focustrack.backend.security.JwtUtil;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -50,7 +42,7 @@ public class UserService {
         if (authentication != null && authentication.getPrincipal() instanceof Jwt) {
             Jwt jwt = (Jwt) authentication.getPrincipal();
             
-            Long userId = Long.parseLong(jwt.getSubject()); // ✅ Extract user ID
+            Long userId = Long.parseLong(jwt.getSubject()); //  Extract user ID
 
             return userRepository.findById(userId)
                     .orElseThrow(() -> new RuntimeException("User not found"));
@@ -75,7 +67,7 @@ public class UserService {
     public String loginUser(String email, String password) {
         Optional<User> user = userRepository.findByEmail(email);
         if (user.isPresent() && passwordEncoder.matches(password, user.get().getPassword())) {
-            return jwtUtil.generateToken(user.get().getId(), email); // ✅ Pass user ID and email
+            return jwtUtil.generateToken(user.get().getId(), email); //  Pass user ID and email
         }
         throw new RuntimeException("Invalid credentials!");
     }
@@ -227,14 +219,14 @@ public class UserService {
 
     //  Get List of Users (Accepted Contacts)
     public List<UserDTO> getContacts() {
-        User user = getAuthenticatedUser(); // ✅ Fetch the authenticated user
+        User user = getAuthenticatedUser(); 
 
         List<Contact> contactsList = contactRepository.findAcceptedContacts(user);
 
         return contactsList.stream()
                 .map(contact -> {
-                    User friend = contact.getSender().getId().equals(user.getId()) ? contact.getContact() : contact.getSender();
-                    return new UserDTO(friend);
+                    User contactUser = contact.getSender().getId().equals(user.getId()) ? contact.getContact() : contact.getSender();
+                    return new UserDTO(contactUser);
                 })
                 .collect(Collectors.toList());
     }

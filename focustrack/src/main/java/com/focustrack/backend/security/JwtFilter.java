@@ -24,7 +24,7 @@ import java.util.Optional;
 public class JwtFilter extends OncePerRequestFilter {
 
     @Autowired
-    private JwtDecoder jwtDecoder; // ✅ Use JwtDecoder instead of JwtUtil
+    private JwtDecoder jwtDecoder; 
 
     @Autowired
     private UserRepository userRepository;
@@ -43,7 +43,7 @@ public class JwtFilter extends OncePerRequestFilter {
         String token = header.substring(7);
         try {
             Jwt jwt = jwtDecoder.decode(token);
-            String email = jwt.getSubject(); // ✅ Extract email
+            String email = jwt.getSubject(); //  Extract email
 
             Optional<com.focustrack.backend.model.User> userOptional = userRepository.findByEmail(email);
             if (userOptional.isPresent()) {

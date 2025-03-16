@@ -1,11 +1,7 @@
 package com.focustrack.backend.controller;
 
-import com.focustrack.backend.dto.UserDTO;
-import com.focustrack.backend.dto.ContactDTO;
 import com.focustrack.backend.dto.RegisterUserDTO;
 import com.focustrack.backend.dto.UpdateUserDTO;
-import com.focustrack.backend.model.Contact;
-import com.focustrack.backend.model.User;
 import com.focustrack.backend.service.UserService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -18,9 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Collections;
-import java.util.List;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/users")
@@ -83,7 +77,6 @@ public class UserController {
         @ApiResponse(responseCode = "200", description = "User found"),
         @ApiResponse(responseCode = "400", description = "User not found")
     })
-    @SecurityRequirement(name = "BearerAuth")
     @GetMapping("/{id}")
     public ResponseEntity<?> getUserById(@PathVariable Long id) {
         try {
@@ -98,7 +91,6 @@ public class UserController {
         @ApiResponse(responseCode = "200", description = "User found"),
         @ApiResponse(responseCode = "400", description = "User not found")
     })
-    @SecurityRequirement(name = "BearerAuth")
     @GetMapping("/me")
     public ResponseEntity<?> getCurrentUserInfo() {
         try {
@@ -113,7 +105,6 @@ public class UserController {
         @ApiResponse(responseCode = "200", description = "User updated successfully"),
         @ApiResponse(responseCode = "400", description = "Invalid email or password format")
     })
-    @SecurityRequirement(name = "BearerAuth")
     @PatchMapping("/me")
     public ResponseEntity<?> updateProfile(@RequestBody UpdateUserDTO updateData) {
         try {
@@ -209,7 +200,6 @@ public class UserController {
         @ApiResponse(responseCode = "400", description = "User not found")
     })
     @SecurityRequirement(name = "BearerAuth")
-    @PreAuthorize("isAuthenticated()") // ✅ Ensure the user is authenticated
     @GetMapping("/contacts")
     public ResponseEntity<?> getContacts() {
         try {
@@ -232,7 +222,7 @@ public class UserController {
             userService.deleteContact(contactId);
             return ResponseEntity.ok("Contact removed successfully.");
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage()); // Return 400 Bad Request if contact not found
+            return ResponseEntity.badRequest().body(e.getMessage()); 
         }
     }
 
