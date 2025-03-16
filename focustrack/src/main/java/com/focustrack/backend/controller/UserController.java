@@ -20,6 +20,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Collections;
 import java.util.List;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import org.springframework.security.access.prepost.PreAuthorize;
+
 @RestController
 @RequestMapping("/users")
 public class UserController {
@@ -90,17 +92,32 @@ public class UserController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }       
- 
+
+    @Operation(summary = "returns current user Info", description = "Retrieves current user details.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "User found"),
+        @ApiResponse(responseCode = "400", description = "User not found")
+    })
+    @SecurityRequirement(name = "BearerAuth")
+    @GetMapping("/me")
+    public ResponseEntity<?> getCurrentUserInfo() {
+        try {
+            return ResponseEntity.ok(userService.getCurrentUserInfo());
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }     
+    
     @Operation(summary = "Update User Profile", description = "Allows users to update their email, password, or description.")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "User updated successfully"),
         @ApiResponse(responseCode = "400", description = "Invalid email or password format")
     })
     @SecurityRequirement(name = "BearerAuth")
-    @PatchMapping("/update/{id}")
-    public ResponseEntity<?> updateProfile(@PathVariable Long id, @RequestBody UpdateUserDTO updateData) {
+    @PatchMapping("/me")
+    public ResponseEntity<?> updateProfile(@RequestBody UpdateUserDTO updateData) {
         try {
-            return ResponseEntity.ok(userService.updateUser(id, updateData));
+            return ResponseEntity.ok(userService.updateUser(updateData));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
@@ -112,10 +129,10 @@ public class UserController {
         @ApiResponse(responseCode = "400", description = "User not found")
     })
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteUser(@PathVariable Long id) {
+    @DeleteMapping("/me")
+    public ResponseEntity<?> deleteUser() {
         try {
-            userService.deleteUser(id);
+            userService.deleteUser();
             return ResponseEntity.ok("User deleted successfully!");
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -128,10 +145,10 @@ public class UserController {
         @ApiResponse(responseCode = "400", description = "User not found or request already sent")
     })
 
-    @PostMapping("/invite")
-    public ResponseEntity<?> sendFriendRequest(@RequestParam Long userId, @RequestParam Long contactId) {
+    @PostMapping("/invitation/invite")
+    public ResponseEntity<?> sendFriendRequest(@RequestParam Long contactId) {
         try {
-            userService.sendFriendRequest(userId, contactId);
+            userService.sendFriendRequest(contactId);
             return ResponseEntity.ok("Friend request sent successfully!");
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -144,10 +161,10 @@ public class UserController {
         @ApiResponse(responseCode = "400", description = "Friend request not found")
     })
 
-    @PostMapping("/respond-invite")
-    public ResponseEntity<?> respondToFriendRequest(@RequestParam Long userId, @RequestParam Long contactId, @RequestParam boolean accept) {
+    @PostMapping("/invitations/respond")
+    public ResponseEntity<?> respondToFriendRequest(@RequestParam Long contactId, @RequestParam boolean accept) {
         try {
-            userService.respondToFriendRequest(userId, contactId, accept);
+            userService.respondToFriendRequest(contactId, accept);
             return ResponseEntity.ok(accept ? "Friend request accepted!" : "Friend request declined!");
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -161,9 +178,9 @@ public class UserController {
     })
 
     @GetMapping("/invitations/sent")
-    public ResponseEntity<?> getSentInvitations(@RequestParam Long userId) {
+    public ResponseEntity<?> getSentInvitations() {
         try {
-            return ResponseEntity.ok(userService.getSentInvitations(userId));
+            return ResponseEntity.ok(userService.getSentInvitations());
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
@@ -177,28 +194,31 @@ public class UserController {
     })
 
     @GetMapping("/invitations/received")
-    public ResponseEntity<?> getReceivedInvitations(@RequestParam Long userId) {
+    public ResponseEntity<?> getReceivedInvitations() {
         try {
-            return ResponseEntity.ok(userService.getReceivedInvitations(userId));
+            return ResponseEntity.ok(userService.getReceivedInvitations());
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
 
-    @Operation(summary = "Get User's contatcs List", description = "Retrieves a list of accepted contacts.")
+    @Operation(summary = "Get User's Contacts List", description = "Retrieves a list of accepted contacts.")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "List of contacts retrieved"),
+        @ApiResponse(responseCode = "403", description = "Forbidden: Cannot access another user's contacts"),
         @ApiResponse(responseCode = "400", description = "User not found")
     })
     @SecurityRequirement(name = "BearerAuth")
+    @PreAuthorize("isAuthenticated()") // ✅ Ensure the user is authenticated
     @GetMapping("/contacts")
-    public ResponseEntity<?> getContacts(@RequestParam Long userId) {
+    public ResponseEntity<?> getContacts() {
         try {
-            return ResponseEntity.ok(userService.getContacts(userId));
+            return ResponseEntity.ok(userService.getContacts());
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage()); 
+            return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
     
     @Operation(summary = "Remove Contact", description = "Removes an accepted contact from the user's contacts list.")
     @ApiResponses({
@@ -207,9 +227,9 @@ public class UserController {
     })
    
     @DeleteMapping("/contacts/remove")
-    public ResponseEntity<?> deleteContact(@RequestParam Long userId, @RequestParam Long contactId) {
+    public ResponseEntity<?> deleteContact(@RequestParam Long contactId) {
         try {
-            userService.deleteContact(userId, contactId);
+            userService.deleteContact(contactId);
             return ResponseEntity.ok("Contact removed successfully.");
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage()); // Return 400 Bad Request if contact not found

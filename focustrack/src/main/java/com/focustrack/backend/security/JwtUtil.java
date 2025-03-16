@@ -7,6 +7,8 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 @Component
 public class JwtUtil {
@@ -14,12 +16,18 @@ public class JwtUtil {
     private static final SecretKey SECRET_KEY = Keys.hmacShaKeyFor(
             "YourSuperSecretKeyForJwtYourSuperSecretKeyForJwtYourSuperSecretKeyForJwt".getBytes()); // ✅ 32+ characters
 
-    public String generateToken(String email) {
+    @SuppressWarnings("deprecation")
+    public String generateToken(Long userId, String email) { // ✅ Include user ID in the token
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("userId", userId); // ✅ Store userId in the JWT payload
+        claims.put("email", email);
+
         return Jwts.builder()
-                .setSubject(email)
+                .setClaims(claims)
+                .setSubject(String.valueOf(userId)) // ✅ Set userId as the subject
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10)) // 10 hours expiration
-                .signWith(SECRET_KEY, SignatureAlgorithm.HS256) // ✅ Explicitly define algorithm
+                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10)) // 10-hour expiration
+                .signWith(SignatureAlgorithm.HS256, SECRET_KEY)
                 .compact();
     }
 
@@ -27,5 +35,6 @@ public class JwtUtil {
         return SECRET_KEY;
     }
 }
+
 
 

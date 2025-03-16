@@ -156,7 +156,7 @@ public class UserServiceTest {
         when(passwordEncoder.encode(updateData.getPassword())).thenReturn("newEncodedPassword");
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        UserDTO result = userService.updateUser(user.getId(), updateData);
+        UserDTO result = userService.updateUser(updateData);
 
         assertNotNull(result);
         assertEquals("newemail@example.com", result.getEmail());
@@ -167,7 +167,7 @@ public class UserServiceTest {
     void testDeleteUser_Success() {
         when(userRepository.existsById(user.getId())).thenReturn(true);
 
-        userService.deleteUser(user.getId());
+        userService.deleteUser();
 
         verify(userRepository, times(1)).deleteById(user.getId());
     }
@@ -176,7 +176,7 @@ public class UserServiceTest {
     void testDeleteUser_NotFound() {
         when(userRepository.existsById(user.getId())).thenReturn(false);
 
-        Exception exception = assertThrows(RuntimeException.class, () -> userService.deleteUser(user.getId()));
+        Exception exception = assertThrows(RuntimeException.class, () -> userService.deleteUser());
         assertEquals("User not found!", exception.getMessage());
     }
 
@@ -186,7 +186,7 @@ public class UserServiceTest {
         when(userRepository.findById(contactUser.getId())).thenReturn(Optional.of(contactUser));
         when(contactRepository.findBySenderAndContact(user, contactUser)).thenReturn(Optional.empty());
 
-        userService.sendFriendRequest(user.getId(), contactUser.getId());
+        userService.sendFriendRequest(contactUser.getId());
 
         verify(contactRepository, times(1)).save(any(Contact.class));
     }
@@ -202,7 +202,7 @@ public class UserServiceTest {
         when(userRepository.findById(contactUser.getId())).thenReturn(Optional.of(contactUser));
         when(contactRepository.findBySenderAndContact(contactUser, user)).thenReturn(Optional.of(friendRequest));
 
-        userService.respondToFriendRequest(user.getId(), contactUser.getId(), true);
+        userService.respondToFriendRequest(contactUser.getId(), true);
 
         assertTrue(friendRequest.isContactAccepted());
         verify(contactRepository, times(1)).save(friendRequest);
@@ -219,7 +219,7 @@ public class UserServiceTest {
         when(userRepository.findById(contactUser.getId())).thenReturn(Optional.of(contactUser));
         when(contactRepository.findBySenderAndContact(contactUser, user)).thenReturn(Optional.of(friendRequest));
 
-        userService.respondToFriendRequest(user.getId(), contactUser.getId(), false);
+        userService.respondToFriendRequest(contactUser.getId(), false);
 
         verify(contactRepository, times(1)).delete(friendRequest);
     }

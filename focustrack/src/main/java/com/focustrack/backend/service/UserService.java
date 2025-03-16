@@ -23,6 +23,11 @@ import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import com.focustrack.backend.security.JwtUtil;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
 
 @Service
 public class UserService {
@@ -38,9 +43,22 @@ public class UserService {
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
     }
-    @Autowired
-    private JwtEncoder jwtEncoder;
+
     
+    public User getAuthenticatedUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof Jwt) {
+            Jwt jwt = (Jwt) authentication.getPrincipal();
+            
+            Long userId = Long.parseLong(jwt.getSubject()); // ✅ Extract user ID
+
+            return userRepository.findById(userId)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+        }
+        throw new RuntimeException("Unauthorized request");
+    }
+    
+
     public UserDTO registerUser(@Valid RegisterUserDTO userDTO) { //  Validates fields
         if (userRepository.findByEmail(userDTO.getEmail()).isPresent()) {
             throw new RuntimeException("Email already registered!");
@@ -57,10 +75,11 @@ public class UserService {
     public String loginUser(String email, String password) {
         Optional<User> user = userRepository.findByEmail(email);
         if (user.isPresent() && passwordEncoder.matches(password, user.get().getPassword())) {
-            return jwtUtil.generateToken(email); // ✅ Return JWT Token
+            return jwtUtil.generateToken(user.get().getId(), email); // ✅ Pass user ID and email
         }
         throw new RuntimeException("Invalid credentials!");
     }
+
 
     //  Get User by Email 
     public UserDTO getUserByEmail(String email) {
@@ -75,8 +94,14 @@ public class UserService {
         return new UserDTO(user);    
     }
     
-    public UserDTO updateUser(Long id, UpdateUserDTO updateData) {
-        return userRepository.findById(id)
+    public UserDTO getCurrentUserInfo() {
+    	User user = getAuthenticatedUser();
+        return new UserDTO(user);    
+    }
+    
+    public UserDTO updateUser(UpdateUserDTO updateData) {
+    	User currentUser = getAuthenticatedUser();
+        return userRepository.findById(currentUser.getId())
             .map(user -> {
                 //  Update email if provided
                 if (updateData.getEmail() != null && !updateData.getEmail().isEmpty()) {
@@ -103,16 +128,16 @@ public class UserService {
     }
 
 
-    public void deleteUser(Long id) {
-        if (!userRepository.existsById(id)) {
-            throw new RuntimeException("User not found!");
-        }
-        userRepository.deleteById(id);
+    public void deleteUser() {
+    	User currentUser = getAuthenticatedUser();
+        userRepository.deleteById(currentUser.getId());
     }
     
-    public void deleteContact(Long userId, Long contactId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+    public void deleteContact(Long contactId) {
+    	User user = getAuthenticatedUser();
+    	if (user.getId() == contactId) {
+    		throw new RuntimeException("You can't send a request to yourself!");
+    	}
         User contactUser = userRepository.findById(contactId)
                 .orElseThrow(() -> new RuntimeException("Contact user not found"));
 
@@ -128,9 +153,11 @@ public class UserService {
         }
     }
 
-    public void sendFriendRequest(Long userId, Long contactId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+    public void sendFriendRequest(Long contactId) {
+    	User user = getAuthenticatedUser();
+    	if (user.getId() == contactId) {
+    		throw new RuntimeException("You can't send a request to yourself!");
+    	}
         User contact = userRepository.findById(contactId)
                 .orElseThrow(() -> new RuntimeException("Contact user not found"));
 
@@ -146,9 +173,11 @@ public class UserService {
     }
     
     //  Accept/Reject Friend Request
-    public void respondToFriendRequest(Long userId, Long contactId, boolean accept) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+    public void respondToFriendRequest(Long contactId, boolean accept) {
+    	User user = getAuthenticatedUser();
+    	if (user.getId() == contactId) {
+    		throw new RuntimeException("You can't send a request to yourself!");
+    	}
         User contact = userRepository.findById(contactId)
                 .orElseThrow(() -> new RuntimeException("Contact user not found"));
 
@@ -164,9 +193,8 @@ public class UserService {
     }
     
     //  Get Sent Invitations (requests this user sent)
-    public List<UserDTO> getSentInvitations(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+    public List<UserDTO> getSentInvitations() {
+    	User user = getAuthenticatedUser();
         //  Find all sent Invitations to new contacts
         List<Contact> sentInvitations = contactRepository.findBySenderAndContactAcceptedFalse(user);
 
@@ -174,16 +202,15 @@ public class UserService {
         return sentInvitations.stream()
                 .map(contact -> {
                     // Determine the friend: If user was the sender, return receiver. Otherwise, return sender.
-                    User friend = contact.getSender().getId().equals(userId) ? contact.getContact() : contact.getSender();
-                    return new UserDTO(friend);
+                    User contactUser = contact.getContact();
+                    return new UserDTO(contactUser);
                 })
                 .collect(Collectors.toList());
     }
 
     //  Get Received Invitations (requests this user received)
-    public List<UserDTO> getReceivedInvitations(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+    public List<UserDTO> getReceivedInvitations() {
+    	User user = getAuthenticatedUser();
 
 
         //  Find all sent Invitations to new contacts
@@ -192,28 +219,24 @@ public class UserService {
         //  Convert to UserDTO list
         return receivedInvitations.stream()
                 .map(contact -> {
-                    // Determine the friend: If user was the sender, return receiver. Otherwise, return sender.
-                    User friend = contact.getSender().getId().equals(userId) ? contact.getContact() : contact.getSender();
-                    return new UserDTO(friend);
+                    User contactUser = contact.getSender();
+                    return new UserDTO(contactUser);
                 })
                 .collect(Collectors.toList());
     }
 
     //  Get List of Users (Accepted Contacts)
-    public List<UserDTO> getContacts(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+    public List<UserDTO> getContacts() {
+        User user = getAuthenticatedUser(); // ✅ Fetch the authenticated user
 
-        //  Find all accepted contacts (sent or received)
         List<Contact> contactsList = contactRepository.findAcceptedContacts(user);
 
-        //  Convert to UserDTO list
         return contactsList.stream()
                 .map(contact -> {
-                    // Determine the friend: If user was the sender, return receiver. Otherwise, return sender.
-                    User friend = contact.getSender().getId().equals(userId) ? contact.getContact() : contact.getSender();
+                    User friend = contact.getSender().getId().equals(user.getId()) ? contact.getContact() : contact.getSender();
                     return new UserDTO(friend);
                 })
                 .collect(Collectors.toList());
     }
+
 }
