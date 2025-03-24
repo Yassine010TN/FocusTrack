@@ -114,6 +114,19 @@ public class GoalService {
 
     }
 
+    public GoalDTO getMyGoal(Long goalId) {
+        User user = userService.getAuthenticatedUser();
+        Goal goal = goalRepository.findById(goalId)
+                .orElseThrow(() -> new RuntimeException("Goal not found!"));
+
+        // Ensure the user owns the goal
+        UserGoal userGoal = userGoalRepository.findByUserAndGoal(user, goal)
+                .orElseThrow(() -> new RuntimeException("Goal not assigned to user!"));
+        
+        return new GoalDTO(goal);
+        
+    }
+    
     public List<GoalDTO> getUserGoals() {
         User user = userService.getAuthenticatedUser();
         List<UserGoal> userGoals = userGoalRepository.findByUserAndHierarchy(user, 1);

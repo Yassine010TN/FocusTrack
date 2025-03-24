@@ -58,7 +58,12 @@ public class GoalController {
     }
 
 
-
+    //  Get a specific goal owned by the current user
+    @GetMapping("/{goalId}")
+    public ResponseEntity<GoalDTO> getMyGoal(@PathVariable Long goalId) {
+        GoalDTO goalDTO = goalService.getMyGoal(goalId);
+        return ResponseEntity.ok(goalDTO);
+    }
 
     @GetMapping("/{goalId}/steps")
     public ResponseEntity<List<GoalStepDTO>> getGoalSteps(@PathVariable Long goalId) {
