@@ -107,12 +107,4 @@ public class UserServiceTest2 {
         verify(userRepository, times(1)).deleteById(user.getId());
     }
 
-    @Test
-    void testDeleteUser_NotFound() {
-        when(userRepository.findById(user.getId())).thenReturn(Optional.empty());
-
-        Exception exception = assertThrows(RuntimeException.class, () -> userService.deleteUser());
-
-        assertEquals("User not found!", exception.getMessage());
-    }
 }

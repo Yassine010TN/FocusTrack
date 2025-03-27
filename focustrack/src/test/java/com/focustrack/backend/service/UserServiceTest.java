@@ -143,10 +143,20 @@ public class UserServiceTest {
 
     @Test
     void testDeleteUser_NotFound() {
+        // Mock the security context with a fake JWT
+        SecurityContextHolder.setContext(securityContext);
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+
+        Jwt mockJwt = mock(Jwt.class);
+        when(authentication.getPrincipal()).thenReturn(mockJwt);
+        when(mockJwt.getSubject()).thenReturn(String.valueOf(user.getId()));
+
+        // Simulate the user is not found in the repository
         when(userRepository.findById(user.getId())).thenReturn(Optional.empty());
 
         Exception exception = assertThrows(RuntimeException.class, () -> userService.deleteUser());
 
-        assertEquals("User not found!", exception.getMessage());
+        assertEquals("User not found", exception.getMessage());
     }
+
 }
