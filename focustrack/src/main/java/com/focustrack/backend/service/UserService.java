@@ -5,7 +5,11 @@ import com.focustrack.backend.dto.RegisterUserDTO;
 import com.focustrack.backend.dto.UpdateUserDTO;
 import com.focustrack.backend.model.User;
 import com.focustrack.backend.model.Contact;
+import com.focustrack.backend.model.PasswordResetToken;
 import com.focustrack.backend.repository.UserRepository;
+import com.focustrack.backend.repository.PasswordResetTokenRepository;
+
+import com.focustrack.backend.service.EmailService;
 
 import jakarta.validation.Valid;
 
@@ -14,6 +18,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import java.util.Optional;
+import java.util.UUID;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 import com.focustrack.backend.security.JwtUtil;
@@ -25,20 +31,26 @@ import org.springframework.security.oauth2.jwt.Jwt;
 public class UserService {
     private final UserRepository userRepository;
     private final ContactRepository contactRepository;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final EmailService emailService;
     private final BCryptPasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
 
     @Autowired
-    public UserService(UserRepository userRepository, ContactRepository contactRepository, BCryptPasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
+    public UserService(UserRepository userRepository, ContactRepository contactRepository,PasswordResetTokenRepository passwordResetTokenRepository
+    		, BCryptPasswordEncoder passwordEncoder, JwtUtil jwtUtil, EmailService emailService) {
         this.userRepository = userRepository;
         this.contactRepository = contactRepository;
         this.passwordEncoder = passwordEncoder;
+        this.passwordResetTokenRepository = passwordResetTokenRepository;
         this.jwtUtil = jwtUtil;
+        this.emailService = emailService;
     }
 
     
     public User getAuthenticatedUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        System.out.println("Authentication: " + authentication);
         if (authentication != null && authentication.getPrincipal() instanceof Jwt) {
             Jwt jwt = (Jwt) authentication.getPrincipal();
             
@@ -230,5 +242,53 @@ public class UserService {
                 })
                 .collect(Collectors.toList());
     }
+
+    
+    public void requestPasswordReset(String email) {
+        try {
+            User user = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("No user found with that email"));
+
+            passwordResetTokenRepository.findByUser(user).ifPresent(existing -> {
+                passwordResetTokenRepository.delete(existing); // ✅ won't trigger authentication
+            });
+
+            String token = UUID.randomUUID().toString();
+            LocalDateTime expiration = LocalDateTime.now().plusMinutes(30);
+
+            PasswordResetToken resetToken = new PasswordResetToken();
+            resetToken.setToken(token);
+            resetToken.setUser(user);
+            resetToken.setExpirationDate(expiration);
+
+            passwordResetTokenRepository.save(resetToken);
+
+            String resetUrl = "http://localhost:3000/reset-password?token=" + token;
+
+            emailService.sendEmail(user.getEmail(), "Reset your password",
+                    "Click the link to reset your password: " + resetUrl);
+
+        } catch (Exception e) {
+            e.printStackTrace(); // log error
+            throw new RuntimeException("Password reset failed: " + e.getMessage()); // return clearer error
+        }
+    }
+
+    
+    public void resetPassword(String token, String newPassword) {
+        PasswordResetToken resetToken = passwordResetTokenRepository.findByToken(token)
+                .orElseThrow(() -> new RuntimeException("Invalid token"));
+
+        if (resetToken.getExpirationDate().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Token expired");
+        }
+
+        User user = resetToken.getUser();
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+
+        passwordResetTokenRepository.delete(resetToken); // Optional: invalidate token
+    }
+
 
 }
