@@ -136,7 +136,7 @@ public class UserController {
         @ApiResponse(responseCode = "400", description = "User not found or request already sent")
     })
 
-    @PostMapping("/invitation/invite")
+    @PostMapping("/invitations")
     public ResponseEntity<?> sendFriendRequest(@RequestParam Long contactId) {
         try {
             userService.sendFriendRequest(contactId);
@@ -152,10 +152,12 @@ public class UserController {
         @ApiResponse(responseCode = "400", description = "Friend request not found")
     })
 
-    @PostMapping("/invitations/respond")
-    public ResponseEntity<?> respondToFriendRequest(@RequestParam Long contactId, @RequestParam boolean accept) {
+    @PatchMapping("/invitations/{id}")
+    public ResponseEntity<?> respondToFriendRequest(
+            @PathVariable Long id,
+            @RequestParam boolean accept) {
         try {
-            userService.respondToFriendRequest(contactId, accept);
+            userService.respondToFriendRequest(id, accept);
             return ResponseEntity.ok(accept ? "Friend request accepted!" : "Friend request declined!");
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -210,21 +212,23 @@ public class UserController {
     }
 
     
-    @Operation(summary = "Remove Contact", description = "Removes an accepted contact from the user's contacts list.")
-    @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Contact removed successfully"),
-        @ApiResponse(responseCode = "400", description = "Contact not found")
-    })
-   
-    @DeleteMapping("/contacts/remove")
-    public ResponseEntity<?> deleteContact(@RequestParam Long contactId) {
-        try {
-            userService.deleteContact(contactId);
-            return ResponseEntity.ok("Contact removed successfully.");
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(e.getMessage()); 
-        }
-    }
+    @Operation(
+    	    summary = "Remove Contact",
+    	    description = "Removes an accepted contact from the user's contact list."
+    	)
+    	@ApiResponses({
+    	    @ApiResponse(responseCode = "200", description = "Contact removed successfully"),
+    	    @ApiResponse(responseCode = "400", description = "Contact not found")
+    	})
+    	@DeleteMapping("/contacts/{id}")
+    	public ResponseEntity<?> deleteContact(@PathVariable Long id) {
+    	    try {
+    	        userService.deleteContact(id);
+    	        return ResponseEntity.ok("Contact removed successfully.");
+    	    } catch (RuntimeException e) {
+    	        return ResponseEntity.badRequest().body(e.getMessage());
+    	    }
+    	}
 
 }
 

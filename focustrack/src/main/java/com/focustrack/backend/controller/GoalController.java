@@ -35,7 +35,7 @@ public class GoalController {
         @ApiResponse(responseCode = "200", description = "Goal created successfully"),
         @ApiResponse(responseCode = "400", description = "Invalid input data")
     })
-    @PostMapping("/create")
+    @PostMapping("/")
     public ResponseEntity<?> createGoal(
             @RequestParam String description,
             @RequestParam int priority,
@@ -47,7 +47,7 @@ public class GoalController {
     }
 
     @Operation(summary = "Add a sub-goal (step) to a main goal", description = "Adds a new step goal under a main goal")
-    @PostMapping("/{mainGoalId}/addStep")
+    @PostMapping("/{mainGoalId}/steps")
     public ResponseEntity<?> addGoalStep(
             @PathVariable Long mainGoalId,
             @RequestParam String description,
@@ -74,7 +74,7 @@ public class GoalController {
     }
 
     @Operation(summary = "Get current user's goals", description = "Returns all main goals created by the authenticated user")
-    @GetMapping("/my")
+    @GetMapping("/")
     public ResponseEntity<List<GoalDTO>> getUserGoals() {
         return ResponseEntity.ok(goalService.getUserGoals());
     }

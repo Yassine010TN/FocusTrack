@@ -168,14 +168,6 @@ public class SharingService {
     }
 
     public void deleteComment(Long commentId) {
-        User user = userService.getAuthenticatedUser();
-        GoalComment comment = goalCommentRepository.findByIdAndAuthor(commentId, user)
-                .orElseThrow(() -> new RuntimeException("You can only delete your own comments"));
-        goalCommentRepository.delete(comment);
-    }
-
-    
-    public void deleteOtherComment(Long commentId) {
         User currentUser = userService.getAuthenticatedUser();
 
         GoalComment comment = goalCommentRepository.findById(commentId)
@@ -184,7 +176,6 @@ public class SharingService {
         Goal goal = comment.getGoal();
 
         boolean isAuthor = comment.getAuthor().getId().equals(currentUser.getId());
-
         boolean isGoalOwner = userGoalRepository.findByUserAndGoalAndHierarchy(currentUser, goal, 1).isPresent();
 
         if (!isAuthor && !isGoalOwner) {
@@ -193,6 +184,7 @@ public class SharingService {
 
         goalCommentRepository.delete(comment);
     }
+
     
     public void updateComment(Long commentId, String newText) {
         User user = userService.getAuthenticatedUser();

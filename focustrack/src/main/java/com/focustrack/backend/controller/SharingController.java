@@ -22,15 +22,15 @@ public class SharingController {
 
     @Operation(summary = "Get goals shared with the current user")
     @ApiResponse(responseCode = "200", description = "List of shared goals retrieved successfully")
-    @GetMapping("/shared-goals")
+    @GetMapping("/my-shared-goals")
     public ResponseEntity<List<?>> getGoalsSharedWithMe() {
         return ResponseEntity.ok(sharingService.getSharedGoals());
     }
 
     @Operation(summary = "Get goals shared by a specific user")
     @ApiResponse(responseCode = "200", description = "List of goals shared by the user")
-    @GetMapping("/shared/from/{ownerId}")
-    public ResponseEntity<List<?>> getGoalsSharedByUser(@PathVariable Long ownerId) {
+    @GetMapping("/shared-goals")
+    public ResponseEntity<List<?>> getGoalsSharedByUser(@RequestParam Long ownerId) {
         List<?> sharedGoals = sharingService.getGoalsSharedByUser(ownerId);
         return ResponseEntity.ok(sharedGoals);
     }
@@ -66,11 +66,12 @@ public class SharingController {
         @ApiResponse(responseCode = "200", description = "Goal unshared successfully"),
         @ApiResponse(responseCode = "400", description = "Goal was not shared or permission denied")
     })
-    @DeleteMapping("/unshare")
-    public ResponseEntity<?> unshareGoal(@RequestParam Long goalId, @RequestParam Long contactId) {
+    @DeleteMapping("/share/{goalId}/{contactId}")
+    public ResponseEntity<?> unshareGoal(@PathVariable Long goalId, @PathVariable Long contactId) {
         sharingService.unshareGoal(goalId, contactId);
         return ResponseEntity.ok("Goal unshared successfully!");
     }
+
 
     @Operation(summary = "Add a comment to a goal")
     @ApiResponses({
@@ -90,27 +91,22 @@ public class SharingController {
         return ResponseEntity.ok(sharingService.getComments(goalId));
     }
 
-    @Operation(summary = "Delete your own comment")
-    @ApiResponses({
-        @ApiResponse(responseCode = "200", description = "Comment deleted successfully"),
-        @ApiResponse(responseCode = "400", description = "User is not the comment owner")
-    })
-    @DeleteMapping("/my-comment/{commentId}")
-    public ResponseEntity<?> deleteComment(@PathVariable Long commentId) {
-        sharingService.deleteComment(commentId);
-        return ResponseEntity.ok("Comment deleted successfully!");
-    }
 
-    @Operation(summary = "Delete a comment on your goal (written by someone else)")
+    @Operation(summary = "Delete a comment", description = "Delete your own comment or comments on your own goals.")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Comment deleted successfully"),
         @ApiResponse(responseCode = "400", description = "Not authorized to delete this comment")
     })
-    @DeleteMapping("/comment/{commentId}")
-    public ResponseEntity<?> deleteOtherComment(@PathVariable Long commentId) {
-        sharingService.deleteOtherComment(commentId);
-        return ResponseEntity.ok("Comment deleted successfully!");
+    @DeleteMapping("/comments/{commentId}")
+    public ResponseEntity<?> deleteComment(@PathVariable Long commentId) {
+        try {
+            sharingService.deleteComment(commentId);
+            return ResponseEntity.ok("Comment deleted successfully!");
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
+
 
     @Operation(summary = "Update your comment")
     @ApiResponses({
