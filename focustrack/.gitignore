@@ -3,6 +3,8 @@ target/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
+**/src/main/resources.properties
+
 
 
 ### STS ###
@@ -35,5 +37,5 @@ build/
 /.apt_generated_tests/
 /bin/
 
-
+src/main/resources/application.properties
  
