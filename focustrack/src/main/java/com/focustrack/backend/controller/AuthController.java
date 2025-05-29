@@ -7,7 +7,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import com.focustrack.backend.dto.ResetPasswordDTO;
 import com.focustrack.backend.service.UserService;
 
 @RestController
@@ -24,8 +26,8 @@ public class AuthController {
     }
 
     @PostMapping("/reset-password")
-    public ResponseEntity<?> resetPassword(@RequestParam String token, @RequestParam String newPassword) {
-        userService.resetPassword(token, newPassword);
+    public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordDTO dto) {
+        userService.resetPassword(dto.getToken(), dto.getNewPassword());
         return ResponseEntity.ok("Password updated successfully");
     }
 }

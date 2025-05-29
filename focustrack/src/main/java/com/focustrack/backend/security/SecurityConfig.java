@@ -44,10 +44,19 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable())  // Disable CSRF for simplicity
+            .cors(cors -> cors.configure(http))
+            .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/users/register", "/users/login", "/swagger-ui/**", "/v3/api-docs/**", "/auth/forgot-password", "/auth/reset-password").permitAll() // Allow public access
-                .anyRequest().authenticated() // Secure all other APIs
+                .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll() // ✅ Allow OPTIONS
+                .requestMatchers(
+                    "/users/register",
+                    "/users/login",
+                    "/swagger-ui/**",
+                    "/v3/api-docs/**",
+                    "/auth/forgot-password",
+                    "/auth/reset-password"
+                ).permitAll()
+                .anyRequest().authenticated()
             )
             .oauth2ResourceServer(oauth2 -> oauth2
                 .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter()))

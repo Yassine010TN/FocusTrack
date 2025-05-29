@@ -13,5 +13,5 @@ public class UpdateGoalDTO {
     private LocalDate startDate;
     private LocalDate dueDate;
     private Boolean isDone;
-    private Boolean goalOrder;
+    private Integer goalOrder;
 }

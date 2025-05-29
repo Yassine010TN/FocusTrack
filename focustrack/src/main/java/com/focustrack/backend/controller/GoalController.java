@@ -73,10 +73,11 @@ public class GoalController {
         return ResponseEntity.ok("Goal updated successfully!");
     }
 
-    @Operation(summary = "Get current user's goals", description = "Returns all main goals created by the authenticated user")
+    @Operation(summary = "Get current user's goals", description = "Returns all main goals created by the authenticated user, sorted by goal order, and filtered by unfinished status.")
     @GetMapping("/")
-    public ResponseEntity<List<GoalDTO>> getUserGoals() {
-        return ResponseEntity.ok(goalService.getUserGoals());
+    public ResponseEntity<List<GoalDTO>> getUserGoals(
+            @RequestParam(value = "filter", required = false) boolean filterUnfinished) { // Optional filter query param
+        return ResponseEntity.ok(goalService.getUserGoals(filterUnfinished));
     }
 
     @Operation(summary = "Get a specific goal", description = "Returns details of a specific goal owned by the user")
@@ -91,6 +92,8 @@ public class GoalController {
     public ResponseEntity<List<GoalStepDTO>> getGoalSteps(@PathVariable Long goalId) {
         return ResponseEntity.ok(goalService.getGoalSteps(goalId));
     }
+
+
 
     @Operation(summary = "Delete a goal", description = "Deletes a main goal and its associated steps")
     @DeleteMapping("/{goalId}")

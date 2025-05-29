@@ -5,6 +5,7 @@ import com.focustrack.backend.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -110,6 +111,10 @@ public class GoalService {
         if (updateData.getIsDone() != null) {
             goal.setDone(updateData.getIsDone());
         }
+        
+        if (updateData.getGoalOrder() != null) {
+            goal.setGoalOrder(updateData.getGoalOrder());
+        }        
         goalRepository.save(goal);
 
     }
@@ -123,16 +128,19 @@ public class GoalService {
         UserGoal userGoal = userGoalRepository.findByUserAndGoal(user, goal)
                 .orElseThrow(() -> new RuntimeException("Goal not assigned to user!"));
         
-        return new GoalDTO(goal);
+        return new GoalDTO(goal, userGoal);
         
     }
     
-    public List<GoalDTO> getUserGoals() {
+    public List<GoalDTO> getUserGoals(boolean filterUnfinished) {
         User user = userService.getAuthenticatedUser();
         List<UserGoal> userGoals = userGoalRepository.findByUserAndHierarchy(user, 1);
 
+        // Filter if needed, and then sort by goalOrder (ascending)
         return userGoals.stream()
-                .map(userGoal -> new GoalDTO(userGoal.getGoal()))
+                .map(userGoal -> new GoalDTO(userGoal.getGoal(), userGoal))  // Create DTO with goal and userGoal
+                .filter(goalDTO -> !filterUnfinished || !goalDTO.isDone()) // If filterUnfinished is true, only include unfinished goals
+                .sorted(Comparator.comparingInt(GoalDTO::getOrder)) // Sort by goal order (ascending)
                 .collect(Collectors.toList());
     }
 
@@ -146,12 +154,16 @@ public class GoalService {
         userGoalRepository.findByUserAndGoal(user, mainGoal)
                 .orElseThrow(() -> new RuntimeException("Goal not assigned to user!"));
 
-        // Retrieve steps (sub-goals) of the main goal and map to DTO
-        return goalStepRepository.findByMainGoal(mainGoal)
+        // Retrieve steps (sub-goals) of the main goal and map to DTO, ordered by goalOrder
+        return goalStepRepository.findByMainGoalOrderByStepGoalGoalOrderAsc(mainGoal)  // Corrected method call
                 .stream()
-                .map(GoalStepDTO::new) // ✅ Convert GoalStep to GoalStepDTO
+                .map(GoalStepDTO::new) // Convert GoalStep to GoalStepDTO
                 .collect(Collectors.toList());
     }
+
+
+
+
     
     public void deleteGoal(Long goalId) {
         User user = userService.getAuthenticatedUser();

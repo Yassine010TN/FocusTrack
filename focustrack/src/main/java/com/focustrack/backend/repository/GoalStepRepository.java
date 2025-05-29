@@ -10,4 +10,5 @@ public interface GoalStepRepository extends JpaRepository<GoalStep, Long> {
     List<GoalStep> findByMainGoal(Goal mainGoal);
     GoalStep findByMainGoalAndStepGoal(Goal mainGoal, Goal stepGoal);
     Optional<GoalStep> findByStepGoal(Goal stepGoal);
+    List<GoalStep> findByMainGoalOrderByStepGoalGoalOrderAsc(Goal mainGoal);
 }

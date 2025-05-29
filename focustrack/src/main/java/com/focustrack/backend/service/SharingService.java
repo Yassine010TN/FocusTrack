@@ -31,13 +31,44 @@ public class SharingService {
         User user = userService.getAuthenticatedUser();
         return sharingRepository.findByContact(user)
                 .stream()
-                .map(sharedGoal -> new SharedGoalDTO(
-                        new GoalDTO(sharedGoal.getGoal()),
-                        sharedGoal.getOwner().getEmail(),
-                        sharedGoal.getOwner().getId()
-                ))
+                .map(sharedGoal -> {
+                    // Find the UserGoal for the owner and the shared goal to get hierarchy
+                    UserGoal userGoal = userGoalRepository.findByUserAndGoal(sharedGoal.getOwner(), sharedGoal.getGoal())
+                            .orElseThrow(() -> new RuntimeException("UserGoal not found for owner and goal"));
+
+                    // Pass both Goal and UserGoal to GoalDTO constructor
+                    GoalDTO goalDTO = new GoalDTO(sharedGoal.getGoal(), userGoal);
+
+                    return new SharedGoalDTO(
+                            goalDTO,
+                            sharedGoal.getOwner().getEmail(),
+                            sharedGoal.getOwner().getId()
+                    );
+                })
                 .collect(Collectors.toList());
     }
+
+    public SharedGoalDTO getSharedGoalById(Long goalId) {
+        User user = userService.getAuthenticatedUser();
+
+        Goal goal = goalRepository.findById(goalId)
+                .orElseThrow(() -> new RuntimeException("Goal not found"));
+
+        SharedGoal sharedGoal = sharingRepository.findByGoalAndContact(goal, user)
+                .orElseThrow(() -> new RuntimeException("This goal is not shared with you"));
+
+        // Find the UserGoal linking the owner and the goal, to get hierarchy
+        UserGoal userGoal = userGoalRepository.findByUserAndGoal(sharedGoal.getOwner(), goal)
+                .orElseThrow(() -> new RuntimeException("UserGoal not found for owner and goal"));
+
+        return new SharedGoalDTO(
+                new GoalDTO(sharedGoal.getGoal(), userGoal),
+                sharedGoal.getOwner().getEmail(),
+                sharedGoal.getOwner().getId()
+        );
+    }
+
+    
     
     public List<SharedGoalDTO> getGoalsSharedByUser(Long ownerId) {
         User contact = userService.getAuthenticatedUser(); // current user
@@ -47,13 +78,18 @@ public class SharingService {
         List<SharedGoal> sharedGoals = sharingRepository.findByOwnerAndContact(owner, contact);
 
         return sharedGoals.stream()
-                .map(sharedGoal -> new SharedGoalDTO(
-                        new GoalDTO(sharedGoal.getGoal()),
-                        sharedGoal.getOwner().getEmail(),
-                        sharedGoal.getOwner().getId()
-                ))
+                .map(sharedGoal -> {
+                    UserGoal userGoal = userGoalRepository.findByUserAndGoal(owner, sharedGoal.getGoal())
+                            .orElseThrow(() -> new RuntimeException("UserGoal not found for owner and goal"));
+                    return new SharedGoalDTO(
+                            new GoalDTO(sharedGoal.getGoal(), userGoal),
+                            sharedGoal.getOwner().getEmail(),
+                            sharedGoal.getOwner().getId()
+                    );
+                })
                 .collect(Collectors.toList());
     }
+
 
     public List<UserDTO> getUsersSharedWith(Long goalId) {
         User owner = userService.getAuthenticatedUser();
@@ -71,8 +107,10 @@ public class SharingService {
                 .collect(Collectors.toList());
     }
     
-    public List<GoalDTO> getStepsOfSharedGoal(Long goalId) {
+    public List<GoalDTO> getStepsOfSharedGoal(Long goalId , Long contactId) {
         User user = userService.getAuthenticatedUser();
+        User contactUser = userRepository.findById(contactId)
+        		.orElseThrow(() -> new RuntimeException("contactUser not found"));
         Goal mainGoal = goalRepository.findById(goalId)
                 .orElseThrow(() -> new RuntimeException("Goal not found"));
 
@@ -81,9 +119,15 @@ public class SharingService {
 
         return goalStepRepository.findByMainGoal(mainGoal)
                 .stream()
-                .map(step -> new GoalDTO(step.getStepGoal()))
+                .map(step -> {
+                    Goal stepGoal = step.getStepGoal();
+                    UserGoal userGoal = userGoalRepository.findByUserAndGoal(contactUser, stepGoal)
+                            .orElseThrow(() -> new RuntimeException("UserGoal not found for user and step goal"));
+                    return new GoalDTO(stepGoal, userGoal);
+                })
                 .collect(Collectors.toList());
     }
+
 
     public void shareGoal(Long goalId, Long contactId) {
         User owner = userService.getAuthenticatedUser();

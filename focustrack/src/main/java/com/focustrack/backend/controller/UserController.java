@@ -1,5 +1,6 @@
 package com.focustrack.backend.controller;
 
+import com.focustrack.backend.dto.LoginRequestDTO;
 import com.focustrack.backend.dto.RegisterUserDTO;
 import com.focustrack.backend.dto.UpdateUserDTO;
 import com.focustrack.backend.service.UserService;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Collections;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 
+@CrossOrigin
 @RestController
 @RequestMapping("/users")
 public class UserController {
@@ -45,18 +47,16 @@ public class UserController {
         @ApiResponse(responseCode = "200", description = "Login successful"),
         @ApiResponse(responseCode = "400", description = "Invalid email or password")
     })
-
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestParam String email, @RequestParam String password) {
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequestDTO loginDTO) {
         try {
-            String token = userService.loginUser(email, password);
+            String token = userService.loginUser(loginDTO.getEmail(), loginDTO.getPassword());
             return ResponseEntity.ok(Collections.singletonMap("token", token));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
-
-
+    
     @Operation(summary = "Find User by Email", description = "Retrieves user details based on the provided email.")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "User found"),
@@ -146,6 +146,23 @@ public class UserController {
         }
     }
 
+    @Operation(summary = "Withdraw a Sent Friend Request", description = "Allows the user to withdraw a sent friend request.")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Friend request withdrawn successfully"),
+        @ApiResponse(responseCode = "400", description = "Friend request not found or cannot withdraw")
+    })
+    @DeleteMapping("/invitations/{contactId}")
+    public ResponseEntity<?> withdrawFriendRequest(@PathVariable Long contactId) {
+        try {
+            userService.withdrawFriendRequest(contactId);
+            return ResponseEntity.ok("Friend request withdrawn successfully!");
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+    
+    
+    
     @Operation(summary = "Respond to Friend Request", description = "Accept or decline a pending friend request.")
     @ApiResponses({
         @ApiResponse(responseCode = "200", description = "Friend request accepted/declined"),

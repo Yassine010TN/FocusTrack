@@ -27,6 +27,20 @@ public class SharingController {
         return ResponseEntity.ok(sharingService.getSharedGoals());
     }
 
+    @Operation(summary = "Get details of a shared goal by ID")
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Shared goal found"),
+        @ApiResponse(responseCode = "404", description = "Goal not found or not shared with user")
+    })
+    @GetMapping("/my-shared-goals/{goalId}")
+    public ResponseEntity<?> getSharedGoalDetails(@PathVariable Long goalId) {
+        try {
+            return ResponseEntity.ok(sharingService.getSharedGoalById(goalId));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(404).body(e.getMessage());
+        }
+    }    
+    
     @Operation(summary = "Get goals shared by a specific user")
     @ApiResponse(responseCode = "200", description = "List of goals shared by the user")
     @GetMapping("/shared-goals")
@@ -46,8 +60,8 @@ public class SharingController {
     @Operation(summary = "Get steps of a shared goal")
     @ApiResponse(responseCode = "200", description = "Steps of the shared goal retrieved successfully")
     @GetMapping("/shared-goals/{goalId}/steps")
-    public ResponseEntity<List<?>> getStepsOfSharedGoal(@PathVariable Long goalId) {
-        return ResponseEntity.ok(sharingService.getStepsOfSharedGoal(goalId));
+    public ResponseEntity<List<?>> getStepsOfSharedGoal(@PathVariable Long goalId, @RequestParam Long contactId) {
+        return ResponseEntity.ok(sharingService.getStepsOfSharedGoal(goalId, contactId));
     }
 
     @Operation(summary = "Share a goal with a contact")

@@ -212,6 +212,22 @@ public class UserService {
                 .collect(Collectors.toList());
     }
 
+    public void withdrawFriendRequest(Long contactId) {
+        User user = getAuthenticatedUser(); // Get the current authenticated user
+        User contact = userRepository.findById(contactId)
+                .orElseThrow(() -> new RuntimeException("Contact user not found"));
+
+        // Check if a sent friend request exists
+        Optional<Contact> existingRequest = contactRepository.findBySenderAndContact(user, contact);
+
+        if (existingRequest.isEmpty()) {
+            throw new RuntimeException("No friend request found to withdraw");
+        }
+
+        // Delete the friend request
+        contactRepository.delete(existingRequest.get());
+    }    
+    
     //  Get Received Invitations (requests this user received)
     public List<UserDTO> getReceivedInvitations() {
     	User user = getAuthenticatedUser();
@@ -250,7 +266,7 @@ public class UserService {
                     .orElseThrow(() -> new RuntimeException("No user found with that email"));
 
             passwordResetTokenRepository.findByUser(user).ifPresent(existing -> {
-                passwordResetTokenRepository.delete(existing); // ✅ won't trigger authentication
+                passwordResetTokenRepository.delete(existing);
             });
 
             String token = UUID.randomUUID().toString();
@@ -263,7 +279,7 @@ public class UserService {
 
             passwordResetTokenRepository.save(resetToken);
 
-            String resetUrl = "http://localhost:3000/reset-password?token=" + token;
+            String resetUrl = "http://localhost:5173/reset-password?token=" + token;
 
             emailService.sendEmail(user.getEmail(), "Reset your password",
                     "Click the link to reset your password: " + resetUrl);
