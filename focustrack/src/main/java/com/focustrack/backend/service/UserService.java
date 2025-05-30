@@ -279,7 +279,7 @@ public class UserService {
 
             passwordResetTokenRepository.save(resetToken);
 
-            String resetUrl = "http://localhost:5173/reset-password?token=" + token;
+            String resetUrl = "https://focus-track-fe.vercel.app/reset-password?token=" + token;
 
             emailService.sendEmail(user.getEmail(), "Reset your password",
                     "Click the link to reset your password: " + resetUrl);
